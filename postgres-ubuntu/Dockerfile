@@ -32,7 +32,7 @@ auto_explain.log_nested_statements = 'on' \n\
 RUN ssh-keygen -q -m PEM -t rsa -b 4096 -f /root/.ssh/id_rsa -N '' && \
     cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys 
 
-RUN service postgresql start && psql postgres postgres -c "ALTER USER postgres WITH PASSWORD 'changeme'"
+RUN service postgresql start && psql postgres postgres -c "ALTER USER postgres WITH PASSWORD 'changeme';CREATE EXTENSION pg_stat_statements;"
 
 RUN sed -i "s/local   all             postgres                                trust/local   all             postgres                                peer/" /etc/postgresql/16/main/pg_hba.conf 
 
