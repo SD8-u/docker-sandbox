@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y openssh-server nano less && \
     echo 'root:changeme' | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
     sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/16/main/postgresql.conf && \
+    sed -i "s/#log_destination = 'stderr'/log_destination = 'csvlog'/" /etc/postgresql/16/main/postgresql.conf && \
+    sed -i "s/#logging_collector = off/logging_collector = on/" /etc/postgresql/16/main/postgresql.conf && \
+    sed -i "s/#track_io_timing = off/track_io_timing = on/" /etc/postgresql/16/main/postgresql.conf && \
     sed -i "s/#shared_preload_libraries = ''/shared_preload_libraries = 'pg_stat_statements, auto_explain'/" /etc/postgresql/16/main/postgresql.conf && \
     sed -i "s/local   all             postgres                                peer/local   all             postgres                                trust/" /etc/postgresql/16/main/pg_hba.conf && \
     echo "host    all             all             0.0.0.0/0               scram-sha-256" | tee -a /etc/postgresql/16/main/pg_hba.conf && \
