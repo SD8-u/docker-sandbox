@@ -9,9 +9,9 @@ apt-get install -y wget gnupg lsb-release openssh-server nano less
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
 wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 
-# Update package list and install PostgreSQL 17
+# Update package list and install PostgreSQL 17 and NFS
 apt-get update
-apt-get install -y postgresql-17
+apt-get install -y postgresql-17 nfs-kernel-server nfs-common
 
 # Configure SSH
 mkdir -p /var/run/sshd
@@ -42,6 +42,9 @@ auto_explain.sample_rate = 0.01
 auto_explain.log_min_duration = 30000
 auto_explain.log_nested_statements = 'on'
 " >> /etc/postgresql/17/main/postgresql.conf
+
+#Add directory to NFS exports
+echo "/nfs *(rw,sync,no_subtree_check,no_root_squash)" > /etc/exports
 
 # Generate SSH keys
 ssh-keygen -q -m PEM -t rsa -b 4096 -f /root/.ssh/id_rsa -N ''
