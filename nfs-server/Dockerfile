@@ -8,6 +8,6 @@ RUN chmod +x /usr/local/bin/setup.sh && /usr/local/bin/setup.sh
 COPY start-services.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/start-services.sh
 
-EXPOSE 5432 22
+VOLUME /nfs
 
 ENTRYPOINT ["/usr/local/bin/start-services.sh"]

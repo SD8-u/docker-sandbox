@@ -43,9 +43,6 @@ auto_explain.log_min_duration = 30000
 auto_explain.log_nested_statements = 'on'
 " >> /etc/postgresql/17/main/postgresql.conf
 
-#Add directory to NFS exports
-echo "/nfs *(rw,sync,no_subtree_check,no_root_squash)" > /etc/exports
-
 # Generate SSH keys
 ssh-keygen -q -m PEM -t rsa -b 4096 -f /root/.ssh/id_rsa -N ''
 cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys

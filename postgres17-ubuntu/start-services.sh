@@ -4,6 +4,7 @@ set -e
 # Start SSH
 echo "Starting SSH..."
 service ssh start
+service rpcbind start
 
 # Start PostgreSQL
 echo "Starting PostgreSQL..."
@@ -15,13 +16,9 @@ if ! su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D /var/lib/postgresql/17
     tail -n 20 /var/log/postgresql/postgresql-17-main.log
 fi
 
-#Start NFS server
-service rpcbind start
-service nfs-kernel-server start
-
 #Mount NFS
 mkdir -p /nfs/mount
-mount -t nfs localhost:/nfs /nfs/mount
+mount -t nfs nfs-server:/nfs /nfs/mount
 
 #Setup test table on NFS filesystem in PostgreSQL
 chown postgres:postgres /nfs/mount
