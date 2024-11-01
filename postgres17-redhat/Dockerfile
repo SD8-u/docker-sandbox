@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM registry.access.redhat.com/ubi9-init
 
 ARG TZ=Etc/UTC
 

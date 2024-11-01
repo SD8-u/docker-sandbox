@@ -1,4 +1,4 @@
-FROM ubuntu:latest
+FROM registry.suse.com/suse/sle15:15.6
 
 ARG TZ=Etc/UTC
 

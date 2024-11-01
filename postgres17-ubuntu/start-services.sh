@@ -4,6 +4,7 @@ set -e
 # Start SSH
 echo "Starting SSH..."
 service ssh start
+service rpcbind start
 
 # Start PostgreSQL
 echo "Starting PostgreSQL..."
@@ -14,6 +15,16 @@ if ! su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D /var/lib/postgresql/17
     echo "PostgreSQL failed to start. Showing last 20 lines of log:"
     tail -n 20 /var/log/postgresql/postgresql-17-main.log
 fi
+
+#Mount NFS
+mkdir -p /nfs/mount
+mount -t nfs nfs-server:/nfs /nfs/mount
+
+#Setup test table on NFS filesystem in PostgreSQL
+chown postgres:postgres /nfs/mount
+chmod 700 /nfs/mount
+su postgres -c "psql -c \"CREATE TABLESPACE testspace LOCATION '/nfs/mount';\""
+su postgres -c "psql -c \"CREATE TABLE test_nfs_table (id serial PRIMARY KEY, data text) TABLESPACE testspace;\""
 
 # Function to stop services gracefully
 stop_services() {
