@@ -3,7 +3,7 @@ set -e
 
 # Update and install necessary packages
 apt-get update
-apt-get install -y wget gnupg lsb-release openssh-server nano less
+apt-get install -y wget gnupg lsb-release openssh-server nano less  net-tools iptables rsyslog iputils-ping
 
 # Set up PostgreSQL repository
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
