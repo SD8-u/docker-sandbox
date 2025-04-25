@@ -49,8 +49,22 @@ cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 
 # Start PostgreSQL and configure it
 service postgresql start
-su - postgres -c "psql -c \"ALTER USER postgres WITH PASSWORD 'changeme';\""
-su - postgres -c "psql -c \"CREATE EXTENSION pg_stat_statements;\""
+su - postgres -c "psql <<EOF
+    ALTER USER postgres WITH PASSWORD 'changeme';
+    CREATE DATABASE redgatemonitor;
+    CREATE USER redgatemonitor WITH PASSWORD 'Y0uRp@s\$w0rD';
+    GRANT pg_monitor TO redgatemonitor;
+    GRANT ALL PRIVILEGES ON DATABASE redgatemonitor TO redgatemonitor;
+    CREATE EXTENSION pg_stat_statements;
+
+    CREATE EXTENSION IF NOT EXISTS file_fdw;
+    CREATE SERVER sqlmonitor_file_server FOREIGN DATA WRAPPER file_fdw;
+    GRANT pg_read_server_files TO redgatemonitor;
+    GRANT EXECUTE ON FUNCTION pg_catalog.pg_current_logfile(text) TO redgatemonitor;
+    GRANT USAGE ON FOREIGN SERVER sqlmonitor_file_server TO redgatemonitor;
+    GRANT pg_read_all_data TO redgatemonitor;
+
+EOF"
 
 # Revert PostgreSQL authentication method
 sed -i "s/local   all             postgres                                trust/local   all             postgres                                peer/" /etc/postgresql/17/main/pg_hba.conf
