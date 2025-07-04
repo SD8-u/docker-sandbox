@@ -43,6 +43,12 @@ auto_explain.log_min_duration = 30000
 auto_explain.log_nested_statements = 'on'
 " >> /etc/postgresql/17/main/postgresql.conf
 
+echo "
+shared_buffers = '128MB'  # Adjust based on your shm size
+work_mem = '4MB'
+maintenance_work_mem = '64MB'
+" >> /etc/postgresql/17/main/postgresql.conf
+
 # Generate SSH keys
 ssh-keygen -q -m PEM -t rsa -b 4096 -f /root/.ssh/id_rsa -N ''
 cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
@@ -52,18 +58,29 @@ service postgresql start
 su - postgres -c "psql <<EOF
     ALTER USER postgres WITH PASSWORD 'changeme';
     CREATE DATABASE redgatemonitor;
-    CREATE USER redgatemonitor WITH PASSWORD 'Y0uRp@s\$w0rD';
+    CREATE USER redgatemonitor WITH PASSWORD 'changeme';
     GRANT pg_monitor TO redgatemonitor;
     GRANT ALL PRIVILEGES ON DATABASE redgatemonitor TO redgatemonitor;
-    CREATE EXTENSION pg_stat_statements;
+EOF"
 
+su - postgres -c "psql -d redgatemonitor <<EOF
+    DO \\\$\\\$
+    DECLARE
+        pg_version integer;
+    BEGIN
+        SELECT current_setting('server_version_num')::integer INTO pg_version;
+        IF pg_version >= 140000 THEN
+            EXECUTE 'GRANT ALL PRIVILEGES ON SCHEMA public TO redgatemonitor';
+        END IF;
+    END
+    \\\$\\\$;
+    CREATE EXTENSION pg_stat_statements;
     CREATE EXTENSION IF NOT EXISTS file_fdw;
     CREATE SERVER sqlmonitor_file_server FOREIGN DATA WRAPPER file_fdw;
     GRANT pg_read_server_files TO redgatemonitor;
     GRANT EXECUTE ON FUNCTION pg_catalog.pg_current_logfile(text) TO redgatemonitor;
     GRANT USAGE ON FOREIGN SERVER sqlmonitor_file_server TO redgatemonitor;
     GRANT pg_read_all_data TO redgatemonitor;
-
 EOF"
 
 # Revert PostgreSQL authentication method
