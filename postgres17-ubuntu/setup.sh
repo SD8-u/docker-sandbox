@@ -3,7 +3,7 @@ set -e
 
 # Update and install necessary packages
 apt-get update
-apt-get install -y wget gnupg lsb-release openssh-server nano less  net-tools iptables rsyslog iputils-ping
+apt-get install -y wget gnupg lsb-release openssh-server nano less  net-tools iptables rsyslog iputils-ping openssl
 
 # Set up PostgreSQL repository
 sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
@@ -48,6 +48,59 @@ shared_buffers = '128MB'  # Adjust based on your shm size
 work_mem = '4MB'
 maintenance_work_mem = '64MB'
 " >> /etc/postgresql/17/main/postgresql.conf
+
+# Generate SSL certificates for PostgreSQL
+mkdir -p /var/lib/postgresql/17/main/ssl
+cd /var/lib/postgresql/17/main/ssl
+
+# Generate private key
+openssl genrsa -out server.key 4096
+chmod 600 server.key
+
+# Generate certificate signing request
+openssl req -new -key server.key -out server.csr -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=postgres-server"
+
+# Generate self-signed certificate (valid for 365 days)
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+
+# Set proper ownership and permissions
+chown postgres:postgres server.key server.crt server.csr
+chmod 600 server.key
+chmod 644 server.crt
+
+# Enable SSL in PostgreSQL configuration
+echo "
+# SSL Configuration
+ssl = on
+ssl_cert_file = '/var/lib/postgresql/17/main/ssl/server.crt'
+ssl_key_file = '/var/lib/postgresql/17/main/ssl/server.key'
+ssl_ca_file = ''
+ssl_crl_file = ''
+ssl_prefer_server_ciphers = on
+ssl_ecdh_curve = 'prime256v1'
+ssl_min_protocol_version = 'TLSv1.2'
+ssl_max_protocol_version = ''
+" >> /etc/postgresql/17/main/postgresql.conf
+
+# Update pg_hba.conf to configure SSL and non-SSL authentication
+sed -i '/host.*all.*all.*0.0.0.0\/0.*scram-sha-256/d' /etc/postgresql/17/main/pg_hba.conf
+sed -i '/host.*all.*all.*::\/0.*scram-sha-256/d' /etc/postgresql/17/main/pg_hba.conf
+
+# SSL connections don't require password (trust authentication)
+echo "hostssl all             all             0.0.0.0/0               trust" >> /etc/postgresql/17/main/pg_hba.conf
+echo "hostssl all             all             ::/0                    trust" >> /etc/postgresql/17/main/pg_hba.conf
+
+# Non-SSL connections require password authentication
+echo "hostnossl all           all             0.0.0.0/0               scram-sha-256" >> /etc/postgresql/17/main/pg_hba.conf
+echo "hostnossl all           all             ::/0                    scram-sha-256" >> /etc/postgresql/17/main/pg_hba.conf
+
+# Local connections (localhost) use password authentication
+echo "host    all             all             127.0.0.1/32            scram-sha-256" >> /etc/postgresql/17/main/pg_hba.conf
+echo "host    all             all             ::1/128                 scram-sha-256" >> /etc/postgresql/17/main/pg_hba.conf
+
+# Copy certificate to a location accessible from outside the container
+cp /var/lib/postgresql/17/main/ssl/server.crt /tmp/postgres-server.crt
+chmod 644 /tmp/postgres-server.crt
 
 # Generate SSH keys
 ssh-keygen -q -m PEM -t rsa -b 4096 -f /root/.ssh/id_rsa -N ''
