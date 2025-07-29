@@ -58,7 +58,7 @@ openssl genrsa -out server.key 4096
 chmod 600 server.key
 
 # Generate certificate signing request
-openssl req -new -key server.key -out server.csr -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=postgres-server"
+openssl req -new -key server.key -out server.csr -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=localhost"
 
 # Generate self-signed certificate (valid for 365 days)
 openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
@@ -68,13 +68,31 @@ chown postgres:postgres server.key server.crt server.csr
 chmod 600 server.key
 chmod 644 server.crt
 
+#Use server certificate as certificate authority
+cp server.crt root.crt
+cp server.key root.key
+
+# Generate client key
+openssl genrsa -out client.key 4096
+chmod 600 client.key
+
+# Generate certificate signing request
+openssl req -new -key client.key -out client.csr -subj "/C=US/ST=State/L=City/O=Organization/OU=OrgUnit/CN=redgatemonitor"
+
+#Generate and sign client certificate with certificate authority
+openssl x509 -req -days 365 -in client.csr -CA root.crt -CAkey root.key -CAcreateserial -out client.crt
+
+chown postgres:postgres client.key client.crt client.csr
+chmod 600 client.key
+chmod 644 client.crt
+
 # Enable SSL in PostgreSQL configuration
 echo "
 # SSL Configuration
 ssl = on
 ssl_cert_file = '/var/lib/postgresql/17/main/ssl/server.crt'
 ssl_key_file = '/var/lib/postgresql/17/main/ssl/server.key'
-ssl_ca_file = ''
+ssl_ca_file = '/var/lib/postgresql/17/main/ssl/root.crt'
 ssl_crl_file = ''
 ssl_prefer_server_ciphers = on
 ssl_ecdh_curve = 'prime256v1'
@@ -101,6 +119,9 @@ echo "host    all             all             ::1/128                 scram-sha-
 # Copy certificate to a location accessible from outside the container
 cp /var/lib/postgresql/17/main/ssl/server.crt /tmp/postgres-server.crt
 chmod 644 /tmp/postgres-server.crt
+
+cp /var/lib/postgresql/17/main/ssl/client.crt /tmp/postgres-client.crt
+chmod 644 /tmp/postgres-client.crt
 
 # Generate SSH keys
 ssh-keygen -q -m PEM -t rsa -b 4096 -f /root/.ssh/id_rsa -N ''

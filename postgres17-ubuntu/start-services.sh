@@ -14,6 +14,10 @@ echo "Copying SSL certificate to /tmp/certs..."
 mkdir -p /tmp/certs
 cp /var/lib/postgresql/17/main/ssl/server.crt /tmp/certs/ 2>/dev/null || echo "Certificate copy failed, certificate might already exist in /tmp/"
 chmod 644 /tmp/certs/server.crt 2>/dev/null || true
+cp /var/lib/postgresql/17/main/ssl/client.crt /tmp/certs/ 2>/dev/null || echo "Certificate copy failed, certificate might already exist in /tmp/"
+chmod 644 /tmp/certs/client.crt 2>/dev/null || true
+cp /var/lib/postgresql/17/main/ssl/root.crt /tmp/certs/ 2>/dev/null || echo "Certificate copy failed, certificate might already exist in /tmp/"
+chmod 644 /tmp/certs/root.crt 2>/dev/null || true
 
 # Check PostgreSQL status and log
 if ! su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D /var/lib/postgresql/17/main status"; then
