@@ -104,9 +104,9 @@ ssl_max_protocol_version = ''
 sed -i '/host.*all.*all.*0.0.0.0\/0.*scram-sha-256/d' /etc/postgresql/17/main/pg_hba.conf
 sed -i '/host.*all.*all.*::\/0.*scram-sha-256/d' /etc/postgresql/17/main/pg_hba.conf
 
-# SSL connections don't require password (trust authentication)
-echo "hostssl all             all             0.0.0.0/0               trust" >> /etc/postgresql/17/main/pg_hba.conf
-echo "hostssl all             all             ::/0                    trust" >> /etc/postgresql/17/main/pg_hba.conf
+# SSL connections don't require password (use certificates to authenticate)
+echo "hostssl all             all             0.0.0.0/0               cert		clientcert=verify-full" >> /etc/postgresql/17/main/pg_hba.conf
+echo "hostssl all             all             ::/0                    cert		clientcert=verify-full" >> /etc/postgresql/17/main/pg_hba.conf
 
 # Non-SSL connections require password authentication
 echo "hostnossl all           all             0.0.0.0/0               scram-sha-256" >> /etc/postgresql/17/main/pg_hba.conf
